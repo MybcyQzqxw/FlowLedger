@@ -69,7 +69,36 @@ python src\main.py
 
 ## 打包
 
-双击 `build.bat`：自动创建 conda 环境、安装依赖、用 PyInstaller 打包（含 OCR 模型），产物位于 `release\FlowLedger.exe`（约 150 MB）。
+**前置条件**：已安装 Miniconda / Anaconda，且 `conda` 在 PATH 中（建议在 *Anaconda Prompt* 中执行）。
+
+在项目根目录执行：
+
+```bat
+:: cmd / Anaconda Prompt
+build.bat
+```
+
+```powershell
+# PowerShell（当前目录下的脚本必须带 .\ 前缀）
+.\build.bat
+```
+
+脚本依次完成：检查 conda → 创建 `flowledger` 环境（Python 3.11，已存在则跳过）→ `pip install -r requirements.txt` → PyInstaller 打包单文件 exe（内含 OCR 模型）→ 复制到 `release\`。首次打包需下载依赖，耗时较长。
+
+产物：`release\FlowLedger.exe`（约 150 MB，免安装，可直接分发）。结束时脚本会询问是否打开输出目录，并 `pause` 等待按键。
+
+<details>
+<summary>不使用 build.bat，手动打包</summary>
+
+```bat
+conda activate flowledger
+python -m PyInstaller --noconfirm --clean --onefile --windowed --name FlowLedger --paths src ^
+    --collect-all rapidocr_onnxruntime --collect-all pillow_heif --icon favicon.ico src\main.py
+```
+
+生成的 exe 位于 `dist\FlowLedger.exe`。
+
+</details>
 
 ## 技术栈
 
