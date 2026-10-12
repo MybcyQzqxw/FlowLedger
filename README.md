@@ -96,7 +96,7 @@ build.bat
 ```bat
 conda activate flowledger
 python -m PyInstaller --noconfirm --clean --onefile --windowed --name FlowLedger --paths src ^
-    --collect-all rapidocr_onnxruntime --collect-all pillow_heif --icon favicon.ico src\main.py
+    --collect-all rapidocr_onnxruntime --collect-all pillow_heif --add-data "favicon.ico;." --icon favicon.ico src\main.py
 ```
 
 生成的 exe 位于 `dist\FlowLedger.exe`。

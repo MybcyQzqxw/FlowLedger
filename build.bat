@@ -46,7 +46,12 @@ if errorlevel 1 (
 
 echo [4/5] 使用 PyInstaller 打包单文件 exe（包含 OCR 模型，体积较大，请耐心等待）...
 set ICON_ARG=
-if exist "favicon.ico" set ICON_ARG=--icon "favicon.ico"
+set DATA_ARG=
+if exist "favicon.ico" (
+    set ICON_ARG=--icon "favicon.ico"
+    rem also bundle it so the running window / taskbar can show the same icon
+    set DATA_ARG=--add-data "favicon.ico;."
+)
 
 call conda run -n %ENV_NAME% --no-capture-output python -m PyInstaller --noconfirm --clean --onefile --windowed ^
     --name FlowLedger ^
@@ -55,6 +60,7 @@ call conda run -n %ENV_NAME% --no-capture-output python -m PyInstaller --noconfi
     --collect-all pillow_heif ^
     --exclude-module PySide6.QtWebEngineCore ^
     --exclude-module PySide6.QtWebEngineWidgets ^
+    %DATA_ARG% ^
     %ICON_ARG% ^
     "src\main.py"
 if errorlevel 1 (
