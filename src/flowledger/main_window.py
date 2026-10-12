@@ -13,11 +13,11 @@ from PySide6.QtCore import QEvent, QSettings, Qt
 from PySide6.QtGui import QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QGroupBox,
     QHBoxLayout,
     QLineEdit,
     QMainWindow,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -31,10 +31,13 @@ from .constants import (
     WINDOW_MIN_SIZE,
     WINDOW_TITLE,
 )
+from .excel_store import ExcelError, ExcelStore
 from .image_utils import make_thumbnail, validate_image
 from .theme import APP_STYLE
 from .widgets.console import ConsoleWidget
+from .widgets.dialogs import confirm
 from .widgets.drop_area import DropArea
+from .widgets.edit_dialog import EditDialog
 from .widgets.export_dialog import ExportDialog
 from .widgets.path_picker import PathPicker
 from .worker import UploadWorker
@@ -67,15 +70,21 @@ class MainWindow(QMainWindow):
         self.drop_area = DropArea()
 
         self.upload_btn = QPushButton("上传")
-        self.check_btn = QPushButton("检查")
         self.export_btn = QPushButton("导出")
-        for btn in (self.upload_btn, self.check_btn, self.export_btn):
-            btn.setMinimumHeight(34)
-            btn.setObjectName("ActionButton")
+        self.check_btn = QPushButton("检查")
+        self.edit_btn = QPushButton("删改")
+        for btn in (self.upload_btn, self.export_btn):
+            btn.setObjectName("BigButton")
+            btn.setMinimumHeight(78)
+        for btn in (self.check_btn, self.edit_btn):
+            btn.setObjectName("SmallButton")
+            btn.setMinimumHeight(36)
+        for btn in (self.upload_btn, self.export_btn, self.check_btn, self.edit_btn):
             btn.setCursor(Qt.PointingHandCursor)
         self.upload_btn.setToolTip("识别截图并录入 Excel，同时将图片以“时间-金额”命名保存到截图目录")
-        self.check_btn.setToolTip("用默认程序打开 Excel 文件")
         self.export_btn.setToolTip("将 Excel 文件导出到指定目录")
+        self.check_btn.setToolTip("用默认程序打开 Excel 文件")
+        self.edit_btn.setToolTip("查看 Excel 内容，并删除不需要的记录")
 
         self.console = ConsoleWidget()
         self.console.setMinimumHeight(150)
@@ -89,10 +98,16 @@ class MainWindow(QMainWindow):
         console_box = QGroupBox("终端")
         QVBoxLayout(console_box).addWidget(self.console)
 
+        # two big buttons (~40% each) on the left, two small stacked ones (~20%) on the right
+        small_column = QVBoxLayout()
+        small_column.setSpacing(6)
+        small_column.addWidget(self.check_btn)
+        small_column.addWidget(self.edit_btn)
         buttons = QHBoxLayout()
-        buttons.addWidget(self.upload_btn, 1)
-        buttons.addWidget(self.check_btn, 1)
-        buttons.addWidget(self.export_btn, 1)
+        buttons.setSpacing(10)
+        buttons.addWidget(self.upload_btn, 4)
+        buttons.addWidget(self.export_btn, 4)
+        buttons.addLayout(small_column, 2)
 
         central = QWidget()
         layout = QVBoxLayout(central)
@@ -109,6 +124,7 @@ class MainWindow(QMainWindow):
         self.drop_area.paste_armed_changed.connect(self._on_paste_armed_changed)
         self.upload_btn.clicked.connect(self._on_upload)
         self.check_btn.clicked.connect(self._on_check)
+        self.edit_btn.clicked.connect(self._on_edit)
         self.export_btn.clicked.connect(self._on_export)
         self.excel_picker.path_changed.connect(lambda p: self._settings.setValue("excel_path", p))
         self.dir_picker.path_changed.connect(lambda p: self._settings.setValue("target_dir", p))
@@ -296,9 +312,51 @@ class MainWindow(QMainWindow):
         self.upload_btn.setEnabled(not busy)
         self.upload_btn.setText("上传中…" if busy else "上传")
         self.export_btn.setEnabled(not busy)
+        self.edit_btn.setEnabled(not busy)
         self.drop_area.setEnabled(not busy)
 
-    # -- check / export -----------------------------------------------------------------
+    # -- check / edit / export ---------------------------------------------------------
+    def _on_edit(self) -> None:
+        if self._worker is not None:
+            return
+        excel = self._excel_path()
+        if excel is None:
+            return
+        if not excel.exists():
+            self.console.warn(f"Excel 文件尚不存在：{excel}，没有可删改的内容")
+            return
+        store = ExcelStore(excel)
+        try:
+            records = store.load_records()
+        except ExcelError as exc:
+            self.console.error(f"无法读取 Excel：{exc}")
+            return
+        self.console.info(f"已打开删改窗口，共 {len(records)} 条记录")
+        target_text = self.dir_picker.path()
+        target_dir = Path(target_text) if target_text else None
+        dialog = EditDialog(store, records, target_dir, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.console.success(
+                f"已保存：删除 {dialog.deleted_count} 条记录，Excel 中剩余 {dialog.remaining_count} 条"
+            )
+            self._report_image_cleanup(dialog)
+        else:
+            self.console.info("已取消删改，Excel 和截图均未做任何修改")
+
+    def _report_image_cleanup(self, dialog: EditDialog) -> None:
+        plan, result = dialog.image_plan, dialog.image_result
+        if result.trashed:
+            self.console.success(f"已将 {len(result.trashed)} 张对应截图移入回收站：{'、'.join(result.trashed)}")
+        for name, reason in result.failed:
+            self.console.error(f"截图 {name} 删除失败：{reason}")
+        for name in plan.missing:
+            self.console.warn(f"截图目录中没有找到 {name}，已跳过")
+        if plan.ambiguous:
+            names = "、".join(sorted(set(plan.ambiguous)))
+            self.console.warn(f"以下时间-金额对应多条记录，无法确定图片归属，图片未删除，请手动处理：{names}")
+        if plan.unmapped:
+            self.console.warn(f"有 {plan.unmapped} 条记录缺少时间或金额，无法定位对应截图，图片未删除")
+
     def _on_check(self) -> None:
         excel = self._excel_path()
         if excel is None:
@@ -320,7 +378,7 @@ class MainWindow(QMainWindow):
             self.console.error(f"Excel 文件不存在，无法导出：{excel}")
             return
         dialog = ExportDialog(self)
-        if dialog.exec() != dialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             self.console.info("已取消导出")
             return
         directory = Path(dialog.directory())
@@ -332,11 +390,10 @@ class MainWindow(QMainWindow):
             if destination.resolve() == excel.resolve():
                 self.console.warn("导出目录即 Excel 所在目录，无需导出")
                 return
-            answer = QMessageBox.question(
+            if not confirm(
                 self, "导出", f"{destination.name} 已存在于导出目录，是否覆盖？",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
-            )
-            if answer != QMessageBox.Yes:
+                ok_text="覆盖", cancel_text="取消",
+            ):
                 self.console.info("已取消导出")
                 return
         try:
@@ -359,11 +416,10 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:  # noqa: N802
         if self._worker is not None:
-            answer = QMessageBox.question(
+            if not confirm(
                 self, "退出", "正在上传中，退出可能导致部分截图未处理，确定退出吗？",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
-            )
-            if answer != QMessageBox.Yes:
+                ok_text="退出", cancel_text="继续上传",
+            ):
                 event.ignore()
                 return
             self._worker.wait(30000)

@@ -59,9 +59,94 @@ QPushButton:disabled {{
     background-color: #f2e2e7;
     color: #bda0a8;
 }}
-QPushButton#ActionButton {{
+QPushButton#BigButton {{
+    background-color: #d6819c;
+    color: white;
+    font-size: 18px;
     font-weight: bold;
     padding: 8px 20px;
+}}
+QPushButton#BigButton:hover:!disabled {{
+    background-color: #c96b89;
+}}
+QPushButton#BigButton:pressed:!disabled {{
+    background-color: #b95a78;
+}}
+QPushButton#BigButton:disabled {{
+    background-color: #ecd3db;
+    color: #fbf3f6;
+}}
+QPushButton#SmallButton {{
+    background-color: #f6d9e2;
+    color: {PINK_TEXT};
+    font-weight: bold;
+    padding: 6px 12px;
+}}
+QPushButton#SmallButton:hover:!disabled {{
+    background-color: #efc3d2;
+}}
+QPushButton#SmallButton:pressed:!disabled {{
+    background-color: #e8b2c5;
+}}
+QPushButton#SmallButton:disabled {{
+    background-color: #f7ebef;
+    color: #c9b3ba;
+}}
+QPushButton#DangerButton {{
+    background-color: #d6819c;
+    color: white;
+    font-weight: bold;
+}}
+QPushButton#DangerButton:hover:!disabled {{
+    background-color: #c0395f;
+}}
+QPushButton#DangerButton:disabled {{
+    background-color: #ecd3db;
+    color: #fbf3f6;
+}}
+QPushButton#PrimaryButton {{
+    font-weight: bold;
+}}
+QCheckBox {{
+    color: {PINK_TEXT};
+    spacing: 8px;
+}}
+QCheckBox::indicator, QTableView::indicator {{
+    width: 16px;
+    height: 16px;
+    border: 1px solid {PINK_BUTTON_HOVER};
+    border-radius: 3px;
+    background-color: white;
+}}
+QCheckBox::indicator:checked, QTableView::indicator:checked {{
+    background-color: #c2255c;
+    border: 1px solid #c2255c;
+}}
+QCheckBox::indicator:indeterminate {{
+    background-color: #efb3c6;
+}}
+QTableWidget {{
+    background-color: white;
+    alternate-background-color: #fff3f7;
+    gridline-color: #f3dbe3;
+    border: 1px solid {PINK_BORDER};
+    border-radius: 4px;
+    color: {PINK_TEXT};
+}}
+QTableWidget::item {{
+    padding: 0px;
+}}
+QHeaderView::section {{
+    background-color: {PINK_BUTTON};
+    color: {PINK_TEXT};
+    font-weight: bold;
+    padding: 7px 6px;
+    border: none;
+    border-right: 1px solid #f3dbe3;
+}}
+QTableCornerButton::section {{
+    background-color: {PINK_BUTTON};
+    border: none;
 }}
 """
 

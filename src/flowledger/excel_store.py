@@ -175,6 +175,20 @@ class ExcelStore:
                 return row_no
         return None
 
+    def load_records(self) -> List[Record]:
+        """All data rows currently in the workbook (empty if the file does not exist)."""
+        if not self.path.exists():
+            return []
+        _, ws = self._open()
+        return self._read(ws)
+
+    def replace_all(self, records: List[Record]) -> None:
+        """Rewrite the workbook so it contains exactly `records` (used by delete/edit)."""
+        wb, ws = self._open()
+        ordered = sorted(records, key=Record.sort_key)  # stable
+        self._rewrite(ws, ordered)
+        self._save(wb)
+
     def add(self, record: Record) -> Optional[int]:
         """Insert `record` keeping chronological order.
 
