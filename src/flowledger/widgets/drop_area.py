@@ -19,21 +19,17 @@ from PySide6.QtWidgets import (
 
 from ..constants import THUMBNAIL_SIZE
 from ..image_utils import dialog_filter
+from ..theme import (
+    DROP_ARMED as _ARMED_STYLE,
+    DROP_HOVER as _HOVER_STYLE,
+    DROP_IDLE as _IDLE_STYLE,
+    HINT_ARMED,
+    HINT_IDLE,
+    PLACEHOLDER_COLOR,
+    THUMB_BG,
+)
 
 _ITEM_ID_ROLE = Qt.UserRole + 1
-
-_IDLE_STYLE = (
-    "QListWidget { background-color: #f4f8fd; border: 1px dashed #7aa7d9; border-radius: 4px; }"
-    "QListWidget::item:selected { background-color: #d9e8f8; color: black; }"
-)
-_HOVER_STYLE = (
-    "QListWidget { background-color: #e6f0fb; border: 2px dashed #2f7fd6; border-radius: 4px; }"
-    "QListWidget::item:selected { background-color: #d9e8f8; color: black; }"
-)
-_ARMED_STYLE = (
-    "QListWidget { background-color: #e4f5e8; border: 2px solid #2e9e50; border-radius: 4px; }"
-    "QListWidget::item:selected { background-color: #d9e8f8; color: black; }"
-)
 
 
 class _ImageRow(QWidget):
@@ -48,7 +44,7 @@ class _ImageRow(QWidget):
         thumb_label = QLabel()
         thumb_label.setFixedSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE)
         thumb_label.setAlignment(Qt.AlignCenter)
-        thumb_label.setStyleSheet("background-color: #dce9f7; border-radius: 3px;")
+        thumb_label.setStyleSheet(f"background-color: {THUMB_BG}; border-radius: 3px;")
         if not thumbnail.isNull():
             thumb_label.setPixmap(
                 thumbnail.scaled(THUMBNAIL_SIZE, THUMBNAIL_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -104,11 +100,11 @@ class DropArea(QWidget):
 
         self._placeholder = QLabel("将截图拖拽到此处（可多选，仅支持图片格式），或使用下方按钮添加\n点击此框可激活 Ctrl+V 粘贴")
         self._placeholder.setAlignment(Qt.AlignCenter)
-        self._placeholder.setStyleSheet("color: #6f8fb3;")
+        self._placeholder.setStyleSheet(f"color: {PLACEHOLDER_COLOR};")
         self._placeholder.setWordWrap(True)
 
         self._paste_hint = QLabel("点击上方框可激活 Ctrl+V 粘贴")
-        self._paste_hint.setStyleSheet("color: #8a8a8a;")
+        self._paste_hint.setStyleSheet(HINT_IDLE)
 
         # clicks inside the box (list, rows, placeholder) bubble up to the viewport
         self.list_widget.viewport().installEventFilter(self)
@@ -179,10 +175,10 @@ class DropArea(QWidget):
         self._apply_style()
         if armed:
             self._paste_hint.setText("● 粘贴已激活：现在按 Ctrl+V 可粘贴截图（再次点击上方框取消）")
-            self._paste_hint.setStyleSheet("color: #1f7a3a; font-weight: bold;")
+            self._paste_hint.setStyleSheet(HINT_ARMED)
         else:
             self._paste_hint.setText("点击上方框可激活 Ctrl+V 粘贴")
-            self._paste_hint.setStyleSheet("color: #8a8a8a;")
+            self._paste_hint.setStyleSheet(HINT_IDLE)
         self.paste_armed_changed.emit(armed)
 
     # -- internals ------------------------------------------------------

@@ -32,6 +32,7 @@ from .constants import (
     WINDOW_TITLE,
 )
 from .image_utils import make_thumbnail, validate_image
+from .theme import APP_STYLE
 from .widgets.console import ConsoleWidget
 from .widgets.drop_area import DropArea
 from .widgets.export_dialog import ExportDialog
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(WINDOW_TITLE)
         self.setMinimumSize(*WINDOW_MIN_SIZE)
         self.setAcceptDrops(True)
+        self.setStyleSheet(APP_STYLE)
         self._settings = QSettings(APP_NAME, APP_NAME, self)
         self._files: Dict[str, Path] = {}
         self._worker: Optional[UploadWorker] = None
@@ -69,6 +71,8 @@ class MainWindow(QMainWindow):
         self.export_btn = QPushButton("导出")
         for btn in (self.upload_btn, self.check_btn, self.export_btn):
             btn.setMinimumHeight(34)
+            btn.setObjectName("ActionButton")
+            btn.setCursor(Qt.PointingHandCursor)
         self.upload_btn.setToolTip("识别截图并录入 Excel，同时将图片以“时间-金额”命名保存到截图目录")
         self.check_btn.setToolTip("用默认程序打开 Excel 文件")
         self.export_btn.setToolTip("将 Excel 文件导出到指定目录")
