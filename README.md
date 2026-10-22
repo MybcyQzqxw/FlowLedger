@@ -1,8 +1,6 @@
 # FlowLedger
 
-*Turn bank income screenshots into a tidy Excel ledger.*
-
-FlowLedger 是一个桌面小工具：把手机上的银行“进账明细”截图拖进来，自动（离线 OCR）提取交易信息并汇总到 Excel 表格中，同时把截图按“时间-金额”归档。最终以单个 `.exe` 分发，无需安装 Python 或任何依赖。
+> FlowLedger 是一款面向流水整理场景的 Windows 桌面端截图录入工具：它通过完全离线的 OCR 识别银行“进账明细”截图中的交易信息，自动汇总到 Excel 台账，并按“时间-金额”对截图重命名归档。
 
 ## 界面与功能
 
